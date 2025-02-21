@@ -16,35 +16,35 @@ def cpu_vector_subtraction(a, b, c, size):
         c[i] = a[i] - b[i]
 
 def run_variant(n):
-    # Initialize vectors with random values
+    ## Initialize vectors with random values
     vector1 = np.random.rand(n).astype(np.float32)
     vector2 = np.random.rand(n).astype(np.float32)
     result_cpu = np.zeros(n, dtype=np.float32)
     result_gpu = np.zeros(n, dtype=np.float32)
 
-    # CPU version
+    ## CPU version
     start_cpu = time.time()
     cpu_vector_subtraction(vector1, vector2, result_cpu, n)
     cpu_time = (time.time() - start_cpu) * 1000
 
     start_gpu = time.time()
-    #copy to GPU memory 
+    ##copy to GPU memory 
     gpu_vector1 = cuda.to_device(vector1)
     gpu_vector2 = cuda.to_device(vector2)
     gpu_temp_result = cuda.device_array(n, dtype=np.float32)
-    # GPU operations timing
+    ## GPU operations timing
     num_blocks = (n + BLOCK_SIZE - 1) // BLOCK_SIZE
     vector_subtraction[num_blocks, BLOCK_SIZE](gpu_vector1, gpu_vector2, gpu_temp_result, n) 
     cuda.synchronize()
     result_gpu = gpu_temp_result.copy_to_host()
     gpu_time = (time.time() - start_gpu) * 1000
 
-    # Verify and print results
+    ## Verify and print results
     correct = np.allclose(result_cpu, result_gpu)
     print_results(cpu_time, gpu_time, correct)
 
 
-    # Free GPU memory
+    ## Free GPU memory
     cuda.close()
 
 def print_results(cpu_time, gpu_time, correct):

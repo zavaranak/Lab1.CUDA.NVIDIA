@@ -4,32 +4,30 @@ import time
 
 input_file = "task2.input.txt"
 
-# CUDA kernel для подсчёта частот символов
 @cuda.jit
 def count_chars_kernel(text, freq):
-    idx = cuda.grid(1)  # Индекс потока
+    idx = cuda.grid(1)
     if idx < len(text):
-        # ATOMIC увеличение счётчика для символа text[idx]
+        # print(idx)
         cuda.atomic.add(freq, text[idx], 1)
 
-# Функция для подсчёта частот символов
 def count_chars(text):
-    # Преобразуем текст в массив байтов
+    # Text to Byte (ASCII)
     text_array = np.frombuffer(text.encode('ascii'), dtype=np.uint8)
     
-    # Инициализируем массив для частот (256 элементов, так как символы кодируются одним байтом)
+    # 256 символ из ASCII таблицы
     freq = np.zeros(256, dtype=np.uint32)
     
-    # Копируем данные на устройство (GPU)
+    # Copy to GPU
     d_text = cuda.to_device(text_array)
     d_freq = cuda.to_device(freq)
     
-    # Запускаем ядро
-    threads_per_block = 1024  # Количество потоков в блоке
+    # Запускать вычислении GPU 
+    threads_per_block = 1024  
     blocks_per_grid = (len(text_array) + threads_per_block - 1) // threads_per_block  # Количество блоков
     count_chars_kernel[blocks_per_grid, threads_per_block](d_text, d_freq)
     
-    # Копируем результат обратно на хост (CPU)
+    # Copy обратно на CPU
     freq = d_freq.copy_to_host()
     return freq
 
@@ -42,7 +40,6 @@ def load_text_from_file(filename):
 def generate_text(size):
     return ''.join(np.random.choice(list('ABCDEFGHJKLMNOPQRSTUVWYZabcdefghijklmnopqrstuvwxyz;.?1234567890'), size))
 
-# Основная программа
 if __name__ == "__main__":
     # Выбор способа получения текста
     choice = input("Выберите способ загрузки текста (1 - из файла, 2 - сгенерировать): ")

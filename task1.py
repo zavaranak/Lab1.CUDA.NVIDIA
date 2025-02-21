@@ -3,7 +3,6 @@ from numba import cuda
 import time
 
 BLOCK_SIZE = 1024
-FIXED_VECTOR_SIZE = 1024  # For variant A
 MAX_VECTOR_SIZE = 1000000  # For variant B
 
 @cuda.jit
@@ -15,40 +14,6 @@ def vector_subtraction(d_a, d_b, d_c, size):
 def cpu_vector_subtraction(a, b, c, size):
     for i in range(size):
         c[i] = a[i] - b[i]
-
-def run_variant_a(n):
-    print(f"Вариант A: Фиксированный размер вектора ({n} элементов)")
-    
-    # Initialize vectors with random values 
-    vector1 = np.random.rand(n).astype(np.float32)
-    vector2 = np.random.rand(n).astype(np.float32)
-    result_cpu = np.zeros(n, dtype=np.float32)
-    result_gpu = np.zeros(n, dtype=np.float32)
-
-    # CPU
-    start_cpu = time.time()
-    cpu_vector_subtraction(vector1, vector2, result_cpu, n)
-    cpu_time = (time.time() - start_cpu) * 1000
-
-    #copy to GPU memory 
-    gpu_vector1 = cuda.to_device(vector1)
-    gpu_vector2 = cuda.to_device(vector2)
-    gpu_temp_result = cuda.device_array(n, dtype=np.float32)
-
-    # GPU operations timing
-    start_gpu = time.time()
-    vector_subtraction[1, BLOCK_SIZE](gpu_vector1, gpu_vector2, gpu_temp_result, n)  # Single block for variant A
-    cuda.synchronize()
-    result_gpu = gpu_temp_result.copy_to_host()
-    gpu_time = (time.time() - start_gpu) * 1000
-
-    # Verify and print results
-    correct = np.allclose(result_cpu, result_gpu)
-    print_results(cpu_time, gpu_time, correct)
-
-    # Free GPU memory
-    cuda.close()
-
 
 def run_variant(n):
     # Initialize vectors with random values
@@ -62,13 +27,13 @@ def run_variant(n):
     cpu_vector_subtraction(vector1, vector2, result_cpu, n)
     cpu_time = (time.time() - start_cpu) * 1000
 
+    start_gpu = time.time()
     #copy to GPU memory 
     gpu_vector1 = cuda.to_device(vector1)
     gpu_vector2 = cuda.to_device(vector2)
     gpu_temp_result = cuda.device_array(n, dtype=np.float32)
     # GPU operations timing
-    start_gpu = time.time()
-    num_blocks = 1 if n == FIXED_VECTOR_SIZE else (n + BLOCK_SIZE - 1) // BLOCK_SIZE
+    num_blocks = (n + BLOCK_SIZE - 1) // BLOCK_SIZE
     vector_subtraction[num_blocks, BLOCK_SIZE](gpu_vector1, gpu_vector2, gpu_temp_result, n) 
     cuda.synchronize()
     result_gpu = gpu_temp_result.copy_to_host()
@@ -77,6 +42,7 @@ def run_variant(n):
     # Verify and print results
     correct = np.allclose(result_cpu, result_gpu)
     print_results(cpu_time, gpu_time, correct)
+
 
     # Free GPU memory
     cuda.close()
@@ -96,7 +62,7 @@ if __name__ == "__main__":
         choice = input("Ваш выбор: ").lower()
     
         if choice == 'a':
-            run_variant(FIXED_VECTOR_SIZE)
+            run_variant(BLOCK_SIZE)
             break
         elif choice == 'b':
             n = int(input(f"Введите размер векторов (до {MAX_VECTOR_SIZE}): "))

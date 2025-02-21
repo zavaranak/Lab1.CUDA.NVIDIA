@@ -1,1 +1,21 @@
-asdfasdf asdfj klasdjfl; kajsdl; fjasl;dfj ;alsdjf asldkfjasldfj;
+What is cuda.atomic.add?
+cuda.atomic.add is a CUDA atomic function that performs an atomic addition. It ensures that when multiple threads try to update the same memory location simultaneously, the updates are done safely and correctly without race conditions.
+
+How Does cuda.atomic.add Work?
+The function has the following signature:
+
+array: The array in which the atomic operation is performed.
+
+index: The index of the element in the array to be updated.
+
+value: The value to add to the element at array[index].
+
+When you call cuda.atomic.add(array, index, value), it:
+
+Reads the current value of array[index].
+
+Adds value to it.
+
+Writes the result back to array[index].
+
+All of this is done atomically, meaning no other thread can interfere with these steps while they are being executed.

@@ -16,7 +16,7 @@ def cpu_vector_subtraction(a, b, c, size):
         c[i] = a[i] - b[i]
 
 def run_variant(n):
-    ## Initialize vectors with random values
+    # # Initialize vectors with random values
     vector1 = np.random.rand(n).astype(np.float32)
     vector2 = np.random.rand(n).astype(np.float32)
     result_cpu = np.zeros(n, dtype=np.float32)
